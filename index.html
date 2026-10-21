@@ -1,1 +1,357 @@
-<!doctype html><title>test</title>ok
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4e:55 Playground</title>
+<meta name="description" content="Look at a photo and guess whether one neuron in InceptionV1 fires. Chance is 50%.">
+<meta property="og:title" content="Can you predict a single neuron?"><meta property="og:description" content="Look at a photo and guess whether InceptionV1 neuron 4e:55 fires. Chance is 50%.">
+<meta property="og:image" content="https://ulissemini.github.io/4e55-game/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:url" content="https://ulissemini.github.io/4e55-game/"><meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Can you predict a single neuron?">
+<meta name="twitter:description" content="Look at a photo and guess whether InceptionV1 neuron 4e:55 fires. Chance is 50%."><meta name="twitter:image" content="https://ulissemini.github.io/4e55-game/og.png">
+<style>
+:root {
+  --bg: #f7f6f3; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+  --accent: #2f5d8a; --good: #2e7d4f; --bad: #b3403a; --onc: #c76b1a; --offc: #4a6a8a;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a9892; --line: #34332f;
+          --accent: #7fa8d1; --good: #5cbf85; --bad: #e0766f; --onc: #e8a05a; --offc: #8fb0d0; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+label { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+input, button { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+input[type=number] { width: 72px; }
+button { cursor: pointer; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; padding: 16px; max-width: 1100px; margin: 0 auto; }
+@media (max-width: 800px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+#poolLine { color: var(--muted); font-size: 13px; margin-bottom: 10px; min-height: 1.4em; }
+.stage { position: relative; width: 100%; max-width: 448px; aspect-ratio: 1; margin: 0 auto; }
+canvas#view { width: 100%; height: 100%; border-radius: 8px; border: 4px solid transparent; display: block; }
+canvas#view.good { border-color: var(--good); } canvas#view.bad { border-color: var(--bad); }
+.answers { display: flex; gap: 10px; justify-content: center; margin: 14px 0 6px; }
+.answers button { min-width: 130px; padding: 10px 14px; font-size: 15px; font-weight: 600; }
+#bOff { border-color: var(--offc); color: var(--offc); } #bOn { border-color: var(--onc); color: var(--onc); }
+#feedback { text-align: center; min-height: 3.2em; }
+#feedback .verdict { font-weight: 700; font-size: 16px; }
+#feedback .good { color: var(--good); } #feedback .bad { color: var(--bad); }
+.hint { color: var(--muted); font-size: 12px; text-align: center; }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-variant-numeric: tabular-nums; }
+.stats div:nth-child(odd) { color: var(--muted); }
+.stats .sec { grid-column: 1 / -1; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+#curve { width: 100%; height: 90px; margin-top: 8px; }
+#history { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+#history img { width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 3px solid; cursor: pointer; }
+.cutoffs table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.cutoffs th, .cutoffs td { padding: 3px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.cutoffs th:first-child, .cutoffs td:first-child { text-align: left; }
+.cutoffs th { color: var(--muted); font-weight: 600; }
+.cutoffs tr.cur td { color: var(--accent); font-weight: 600; }
+.err { color: var(--bad); }
+#shareBtn { width: 100%; margin-top: 12px; padding: 8px; font-weight: 600; background: var(--accent); color: #fff; border-color: var(--accent); }
+#shareBtn:disabled { opacity: .45; cursor: default; }
+#intro, #modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+#intro.open, #modal.open { display: flex; }
+#intro .box, #modal .box { background: var(--panel); border-radius: 12px; padding: 16px; max-width: 760px; width: 100%; }
+#modal img { width: 100%; border-radius: 8px; display: block; background: #141418; aspect-ratio: 1200 / 630; }
+#modal .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+#modal .row a, #modal .row button { flex: 1; text-align: center; padding: 9px 12px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); background: var(--bg); text-decoration: none; font-weight: 600; cursor: pointer; font: inherit; }
+details { font-size: 12px; color: var(--muted); margin-top: 10px; }
+#task { font-size: 14px; margin-bottom: 4px; }
+#task b.on { color: var(--onc); } #task b.off { color: var(--offc); }
+#intro .box { max-width: 560px; font-size: 15px; line-height: 1.5; }
+#intro h3 { margin: 0 0 10px; font-size: 18px; }
+#intro ul { padding-left: 20px; margin: 8px 0; } #intro li { margin: 4px 0; }
+#intro .note { color: var(--muted); font-size: 13px; }
+#intro button.go { width: 100%; margin-top: 14px; padding: 10px; font-weight: 600; background: var(--accent); color: #fff; border-color: var(--accent); }
+.linkbtn { background: none; border: none; color: var(--accent); text-decoration: underline; padding: 0; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Predict InceptionV1 neuron 4e:55</h1>
+  <label title="ON = the photo is at or above this percentile of the neuron's activation over all 1.33M ImageNet photos">ON ≥ percentile <input id="on" type="number" step="1" min="1" max="99.9" value="90"></label>
+  <label title="OFF = the photo is at or below this percentile">OFF ≤ percentile <input id="off" type="number" step="1" min="0.1" max="99" value="10"></label>
+  <button id="reset" title="Clear your local history">Reset history</button>
+  <button class="linkbtn" id="whatBtn">What am I predicting?</button>
+</header>
+<main>
+  <section class="card">
+    <div id="task"></div>
+    <div id="poolLine">Loading…</div>
+    <div class="stage"><canvas id="view" width="448" height="448"></canvas></div>
+    <div class="answers">
+      <button id="bOff">Off  (F)</button>
+      <button id="bOn">On  (J)</button>
+    </div>
+    <div id="feedback"></div>
+    <div class="hint">F = off · J = on · Space = next · H = toggle heatmap</div>
+    <details><summary>About</summary>
+      Each photo is shown as the 224×224 crop the network actually sees. Cutoffs are percentiles of 4e:55's activation over all 1.33M ImageNet photos
+      (its value on a photo = its strongest response anywhere in the image). Default: ON = top 10%, OFF = bottom 10%. Half the trials are ON photos and half OFF,
+      each drawn in proportion to how common they are in ImageNet; photos in between are never shown. After you answer you see the photo's percentile, its
+      peak as % of the neuron's max, and a heatmap (bright where it fires). Your history stays in this browser.
+    </details>
+  </section>
+  <aside class="card">
+    <h2>This cutoff</h2>
+    <div class="stats" id="stats"></div>
+    <svg id="curve" viewBox="0 0 280 90" preserveAspectRatio="none"></svg>
+    <div class="hint" style="text-align:left">Rolling accuracy (last 20) at the current cutoff. Dashed line = 50%.</div>
+    <button id="shareBtn" disabled>Share my score</button>
+    <h2 style="margin-top:14px">By cutoff</h2>
+    <div id="cutoffs" class="cutoffs"></div>
+    <h2 style="margin-top:14px">History</h2>
+    <div id="history"></div>
+  </aside>
+</main>
+<div id="intro" class="modalbg"><div class="box">
+  <h3>What you're predicting</h3>
+  <div id="introBody"></div>
+  <button class="go" id="introOk">OK, start (Enter)</button>
+</div></div>
+<div id="modal"><div class="box">
+  <img id="cardImg" alt="score card">
+  <div class="row"><a id="dlLink" download="4e55-score.png">Download image</a><button id="copyLink">Copy link</button><button id="closeModal">Close</button></div>
+  <div class="hint" id="shareHint" style="margin-top:8px"></div>
+</div></div>
+<script>
+const $ = s => document.querySelector(s);
+const KEY = 'pg455.trials.v2';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+const save = t => { try { localStorage.setItem(KEY, JSON.stringify(t.slice(-5000))); } catch {} };
+const st = { data: null, onIdx: [], offIdx: [], trial: null, answered: null, img: null, heat: null, showHeat: true, trials: load() };
+const cv = $('#view'), ctx = cv.getContext('2d');
+const cut = () => ({ on: +$('#on').value, off: +$('#off').value });
+const cutKey = c => `${(+c.on).toFixed(1)}/${(+c.off).toFixed(1)}`;
+const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+let MAPS = null;  // all 14x14 heatmaps in one file, fetched once
+const loadMap = i => (MAPS ||= fetch('maps.bin').then(r => r.arrayBuffer()).then(b => new Uint8Array(b))).then(m => m.subarray(196 * i, 196 * (i + 1)));
+
+function pools() {
+  const { on, off } = cut(), p = st.data.pct, w = st.data.weight, v = p;
+  st.onIdx = []; st.offIdx = [];
+  for (let i = 0; i < p.length; i++) { if (p[i] >= on) st.onIdx.push(i); else if (p[i] <= off) st.offIdx.push(i); }
+  const cum = idx => { let s = 0; return idx.map(i => (s += w[i])); };
+  st.onCum = cum(st.onIdx); st.offCum = cum(st.offIdx);
+  const warn = [!st.onIdx.length && 'no photos reach the on cutoff', !st.offIdx.length && 'no photos fall below the off cutoff',
+                st.onIdx.length && st.onIdx.length < 50 && `only ${st.onIdx.length} on-photos (repeats will happen)`].filter(Boolean);
+  explain();
+  $('#poolLine').innerHTML = `on-pool ${st.onIdx.length.toLocaleString()} · off-pool ${st.offIdx.length.toLocaleString()} of ${v.length.toLocaleString()} photos` +
+    (warn.length ? ` <span class="err">· ${warn.join('; ')}</span>` : '');
+}
+
+let queue = [];
+function makeTrial() {
+  const truth = Math.random() < 0.5, pool = truth ? st.onIdx : st.offIdx, cw = truth ? st.onCum : st.offCum;
+  if (!pool.length) return null;
+  // weighted draw: reproduces the real distribution of photos within the percentile range
+  const r = Math.random() * cw[cw.length - 1]; let lo = 0, hi = cw.length - 1;
+  while (lo < hi) { const m = (lo + hi) >> 1; if (cw[m] < r) lo = m + 1; else hi = m; }
+  const i = pool[lo];
+  return { i, truth, frac: st.data.values[i], pct: st.data.pct[i], cls: st.data.classes[i], ...cut(), imgP: loadImg(`img/${i}.jpg`), heatP: loadMap(i).catch(() => null) };
+}
+async function next() {
+  st.answered = null; st.heat = null; $('#feedback').innerHTML = ''; cv.className = '';
+  while (queue.length < 5) { const t = makeTrial(); if (!t) break; queue.push(t); }
+  const t = queue.shift(); if (!t) return;
+  queue.push(makeTrial());
+  st.trial = t;
+  try { st.img = await t.imgP; } catch (e) { $('#feedback').innerHTML = `<span class="err">image failed: ${e}</span>`; return; }
+  if (st.trial === t) draw();
+}
+
+async function answer(guess) {
+  if (!st.trial || st.answered) return;
+  const t = st.trial; st.trial = null;
+  const r = { i: t.i, truth: t.truth, frac: t.frac, pct: t.pct, cls: t.cls, on: t.on, off: t.off, guess, correct: guess === t.truth, ts: Date.now() };
+  st.answered = r; st.trials.push(r); save(st.trials);
+  showFeedback(r); renderStats();
+  st.heat = await t.heatP; if (st.answered === r) draw();
+}
+
+function showFeedback(r) {
+  cv.className = r.correct ? 'good' : 'bad';
+  $('#feedback').innerHTML = `<div class="verdict ${r.correct ? 'good' : 'bad'}">${r.correct ? 'Correct' : 'Wrong'} — it was ${r.truth ? 'ON' : 'OFF'}</div>
+     <div>this photo is at the <b>${r.pct.toFixed(1)}th percentile</b> for this neuron (peak ${(100 * r.frac).toFixed(1)}% of its max) · ImageNet class: ${r.cls}</div>`;
+}
+
+function draw() {
+  if (!st.img) return;
+  const W = cv.width; ctx.drawImage(st.img, 0, 0, W, W);
+  if (!st.heat || !st.showHeat) return;
+  const n = 14, small = document.createElement('canvas'); small.width = small.height = n;
+  const sc = small.getContext('2d'), id = sc.createImageData(n, n);
+  for (let k = 0; k < n * n; k++) id.data[4 * k + 3] = Math.round(215 * (1 - Math.min(1, st.heat[k] / 255)));
+  sc.putImageData(id, 0, 0); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(small, 0, 0, W, W);
+}
+
+const MIN_SHARE = 20;
+function _unusedShareParams() {
+  const cur = cutKey(cut()), at = st.trials.filter(r => cutKey(r) === cur);
+  const a = at.length ? Math.round(100 * at.filter(r => r.correct).length / at.length) : 0;
+  return { a, n: at.length, on: +$('#on').value, off: +$('#off').value };
+}
+function openShare() {
+  const cur = cutKey(cut()), at = st.trials.filter(r => cutKey(r) === cur);
+  const cell = r => r.truth ? (r.guess ? 0 : 1) : (r.guess ? 2 : 3);   // TP, FN, FP, TN
+  const cnt = [0, 0, 0, 0], ex = [[], [], [], []];
+  at.forEach(r => cnt[cell(r)]++);
+  [...at].reverse().forEach(r => { const k = cell(r); if (ex[k].length < 4 && !ex[k].includes(r.i)) ex[k].push(r.i); });
+  const qs = `card=${cnt.join('.')}~${ex.map(e => e.join(',')).join('_')}~${+$('#on').value}~${+$('#off').value}`;
+  showCard(cnt, ex, +$('#on').value, +$('#off').value, `${location.origin}${location.pathname}#${qs}`, false);
+}
+// ---------- score card, drawn in the browser (same layout as the old server-rendered card)
+async function drawCard(q, ex, on, off) {
+  const [tp, fn, fp, tn] = q, n = tp + fn + fp + tn, acc = n ? Math.round(100 * (tp + tn) / n) : 0;
+  const W = 1200, H = 630, c = document.createElement('canvas'); c.width = W; c.height = H; const d = c.getContext('2d');
+  const font = (s, b) => `${b ? '600 ' : ''}${s}px system-ui, -apple-system, Segoe UI, sans-serif`;
+  const text = (t, x, y, s, col, align = 'center', b = false) => { d.font = font(s, b); d.fillStyle = col; d.textAlign = align; d.textBaseline = 'top'; d.fillText(t, x, y); };
+  d.fillStyle = '#fff'; d.fillRect(0, 0, W, H);
+  const GREEN = '#2e7d4f', RED = '#c0392b', GREY = '#555', top = +(100 - on).toFixed(1);
+  text(`My predictions of InceptionV1 neuron 4e:55: ${acc}% correct on ${n} photos`, W / 2, 24, 30, '#111', 'center', true);
+  text(`ON = top ${top}% of photos for this neuron, OFF = bottom ${off}%; half the photos are ON, so guessing = 50%  ·  play at ${location.host}${location.pathname.replace(/\/$/, '')}`, W / 2, 64, 16, '#6e6e6e');
+  const X0 = 80, Y0 = 128, CW = 544, CH = 238, G = 12;
+  ['you said: fires', 'you said: silent'].forEach((l, k) => text(l, X0 + k * (CW + G) + CW / 2, 98, 20, '#111', 'center', true));
+  [[`neuron fires`, `(top ${top}%)`], [`neuron silent`, `(bottom ${off}%)`]].forEach(([a, b], r) => {
+    d.save(); d.translate(34, Y0 + r * (CH + G) + CH / 2); d.rotate(-Math.PI / 2);
+    text(a, 0, -14, 20, '#111', 'center', true); text(b, 0, 10, 16, '#111'); d.restore();
+  });
+  const cells = [[0, 0, tp, 'true positive', true, ex[0], tp + fn, 'firing'], [0, 1, fn, 'false negative', false, ex[1], tp + fn, 'firing'],
+                 [1, 0, fp, 'false positive', false, ex[2], fp + tn, 'silent'], [1, 1, tn, 'true negative', true, ex[3], fp + tn, 'silent']];
+  const imgs = await Promise.all(cells.map(cl => Promise.all((cl[5] || []).slice(0, 4).map(i => loadImg(`img/${i}.jpg`).catch(() => null)))));
+  cells.forEach(([r, col, cnt, tag, ok, ids, rowtot, kind], k) => {
+    const x = X0 + col * (CW + G), y = Y0 + r * (CH + G);
+    d.fillStyle = ok ? '#eef6f0' : '#fbecec'; d.fillRect(x, y, CW, CH);
+    text(ok ? 'you predicted this' : "you said this wouldn't happen", x + 12, y + 10, 21, ok ? GREEN : RED, 'left', true);
+    text(`${tag} · ${cnt} of ${rowtot} ${kind} photos${rowtot ? ` (${Math.round(100 * cnt / rowtot)}%)` : ''}`, x + 12, y + 38, 15, GREY, 'left');
+    const bx = x + 12, by = y + 60, bw = CW - 24; d.fillStyle = '#ddd'; d.fillRect(bx, by, bw, 8);
+    if (rowtot) { d.fillStyle = ok ? GREEN : RED; d.fillRect(bx, by, bw * cnt / rowtot, 8); }
+    const S = 104;
+    (ids || []).slice(0, 4).forEach((i, j) => {
+      const tx = x + 12 + j * (S + 30), im = imgs[k][j];
+      if (im) d.drawImage(im, tx, y + 80, S, S);
+      text((st.data.classes[i] || '').slice(0, 16), tx + S / 2, y + 80 + S + 4, 13, '#111');
+      text(`pct ${Math.round(st.data.pct[i])}`, tx + S / 2, y + 80 + S + 20, 13, '#111');
+    });
+    if (!(ids || []).length) text('none', x + CW / 2, y + 128, 22, '#a0a0a0');
+  });
+  return c;
+}
+async function showCard(q, ex, on, off, link, shared) {
+  $('#modal').classList.add('open'); $('#shareHint').textContent = 'Drawing…';
+  const c = await drawCard(q, ex, on, off), url = c.toDataURL('image/png');
+  $('#cardImg').src = url; $('#dlLink').href = url;
+  $('#copyLink').style.display = shared ? 'none' : '';
+  $('#copyLink').onclick = () => navigator.clipboard.writeText(link).then(() => { $('#shareHint').textContent = 'Link copied: ' + link; });
+  $('#shareHint').textContent = shared ? 'Someone shared this score. Close this to play yourself.' : 'The link opens the game with this card on top.';
+}
+function renderStats() {
+  const t = st.trials, cur = cutKey(cut()), at = t.filter(r => cutKey(r) === cur);
+  $('#shareBtn').disabled = at.length < MIN_SHARE;
+  $('#shareBtn').textContent = at.length < MIN_SHARE ? `Share my score (after ${MIN_SHARE - at.length} more)` : 'Share my score';
+  const acc = a => a.length ? (100 * a.filter(r => r.correct).length / a.length).toFixed(0) + '%' : '—';
+  const row = (k, v) => `<div>${k}</div><div>${v}</div>`;
+  $('#stats').innerHTML = `<div class="sec">ON ≥ p${$('#on').value}, OFF ≤ p${$('#off').value}</div>` +
+    row('Trials', at.length) + row('Accuracy', acc(at)) + row('Last 20', acc(at.slice(-20))) +
+    row('On called on', acc(at.filter(r => r.truth))) + row('Off called off', acc(at.filter(r => !r.truth)));
+  const g = {}; t.forEach(r => (g[cutKey(r)] ||= []).push(r));
+  const keys = Object.keys(g).sort();
+  $('#cutoffs').innerHTML = keys.length ? `<table><tr><th>on / off</th><th>n</th><th>acc</th><th>hits</th><th>rej.</th></tr>` + keys.map(k => {
+    const a = g[k]; return `<tr class="${k === cur ? 'cur' : ''}"><td>≥p${k.split('/')[0]} / ≤p${k.split('/')[1]}</td><td>${a.length}</td><td>${acc(a)}</td>` +
+      `<td>${acc(a.filter(r => r.truth))}</td><td>${acc(a.filter(r => !r.truth))}</td></tr>`; }).join('') + '</table>'
+    : '<div class="hint" style="text-align:left">No trials yet.</div>';
+  const pts = at.map((_, i) => { const w = at.slice(Math.max(0, i - 19), i + 1); return w.filter(r => r.correct).length / w.length; });
+  const X = i => pts.length < 2 ? 0 : 280 * i / (pts.length - 1), Y = a => 86 - 82 * a;
+  $('#curve').innerHTML = `<line x1="0" x2="280" y1="${Y(.5)}" y2="${Y(.5)}" stroke="var(--line)" stroke-dasharray="4 3"/>` +
+    (pts.length ? `<polyline fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.map((a, i) => `${X(i)},${Y(a)}`).join(' ')}"/>` : '');
+  const h = $('#history'); h.innerHTML = '';
+  t.slice(-40).reverse().forEach(r => {
+    const im = new Image(); im.src = `img/${r.i}.jpg`; im.loading = 'lazy'; im.style.borderColor = r.correct ? 'var(--good)' : 'var(--bad)';
+    im.title = `${r.truth ? 'ON' : 'OFF'} pct ${r.pct.toFixed(0)} · ${r.cls} · cutoff ≥p${r.on} / ≤p${r.off}`;
+    im.onclick = () => review(r); h.append(im);
+  });
+}
+
+async function review(r) {
+  st.trial = null; st.answered = r; st.img = await loadImg(`img/${r.i}.jpg`);
+  showFeedback(r); $('#feedback').innerHTML += '<div class="hint">reviewing a past trial — Space for a new one</div>';
+  st.heat = await loadMap(r.i).catch(() => null); draw();
+}
+
+function cutoffChanged() {
+  let on = +$('#on').value, off = +$('#off').value;
+  on = Math.min(99.9, Math.max(1, on)); off = Math.min(Math.max(0.1, off), on - 1);
+  $('#on').value = +on.toFixed(1); $('#off').value = +off.toFixed(1);
+  location.hash = `on=${$('#on').value}&off=${$('#off').value}`;
+  queue = []; pools(); renderStats(); next();
+}
+$('#on').addEventListener('change', cutoffChanged); $('#off').addEventListener('change', cutoffChanged);
+$('#reset').onclick = () => { if (confirm('Clear your local history?')) { st.trials = []; save([]); renderStats(); } };
+$('#shareBtn').onclick = openShare;
+$('#closeModal').onclick = () => { $('#modal').classList.remove('open'); if (!seen()) openIntro(); };
+$('#modal').onclick = e => { if (e.target.id === 'modal') $('#modal').classList.remove('open'); };
+$('#bOn').onclick = () => answer(true); $('#bOff').onclick = () => answer(false);
+document.addEventListener('keydown', e => {
+  if ($('#intro').classList.contains('open')) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeIntro(); } return; }
+  if (e.target.tagName === 'INPUT' || $('#modal').classList.contains('open')) return;
+  if (e.key === 'j' || e.key === 'J') answer(true);
+  else if (e.key === 'f' || e.key === 'F') answer(false);
+  else if (e.key === ' ') { e.preventDefault(); if (st.answered) next(); }
+  else if (e.key === 'h' || e.key === 'H') { st.showHeat = !st.showHeat; draw(); }
+});
+
+// --- what the task is: shown on first visit, reopenable, numbers follow the current cutoffs
+const SEEN = 'pg455.introSeen.v1';
+const seen = () => { try { return localStorage.getItem(SEEN) === '1'; } catch { return false; } };
+function cutFracs() {  // % of max at the cutoffs, read off the photo pool
+  const { on, off } = cut(), p = st.data.pct, v = st.data.values; let lo = Infinity, hi = -Infinity;
+  for (let i = 0; i < p.length; i++) { if (p[i] >= on) lo = Math.min(lo, v[i]); else if (p[i] <= off) hi = Math.max(hi, v[i]); }
+  return { onF: 100 * lo, offF: 100 * hi };
+}
+const fmt = x => (+x).toFixed(x < 10 ? 1 : 0);
+function explain() {
+  const { on, off } = cut(), { onF, offF } = cutFracs(), top = +(100 - on).toFixed(1);
+  $('#task').innerHTML = `Is this photo in the neuron's <b class="on">top ${top}%</b> or its <b class="off">bottom ${off}%</b>? Half are each, so chance is 50%.`;
+  $('#introBody').innerHTML = `
+    <p>InceptionV1 is an image classifier. Neuron <b>4e:55</b> is one unit inside it, known as a "cats and cars" neuron.</p>
+    <p>Each round shows one photo. Guess whether the neuron responds to it strongly or barely at all:</p>
+    <ul>
+      <li><b style="color:var(--onc)">ON</b>: strong. The photo is in the neuron's <b>top ${top}%</b> of all 1.33M ImageNet photos (its peak response is at least ${fmt(onF)}% of the largest it ever gives).</li>
+      <li><b style="color:var(--offc)">OFF</b>: weak. The photo is in its <b>bottom ${off}%</b> (peak at most ${fmt(offF)}% of its max).</li>
+    </ul>
+    <p>Half the photos are ON and half OFF, so guessing at random scores 50%. Photos in between are never shown.</p>
+    <p class="note">This only tests the extremes, which is far easier than predicting how strongly the neuron responds to an ordinary photo.
+    After each guess you see the photo's percentile and a heatmap of where it fired. You can change the cutoffs at the top.</p>`;
+}
+function openIntro() { explain(); $('#intro').classList.add('open'); }
+function closeIntro() { $('#intro').classList.remove('open'); try { localStorage.setItem(SEEN, '1'); } catch {} }
+$('#introOk').onclick = closeIntro;
+$('#whatBtn').onclick = openIntro;
+(async () => {
+  try {
+    const r = await fetch('data.json'); if (!r.ok) throw new Error(`data: HTTP ${r.status}`);
+    st.data = await r.json();
+    const h = new URLSearchParams(location.hash.slice(1)), shared = h.get('card');
+    if (h.get('on')) $('#on').value = h.get('on'); if (h.get('off')) $('#off').value = h.get('off');
+    if (shared) {  // card=tp.fn.fp.tn~ids_ids_ids_ids~on~off
+      const [q, ex, on, off] = shared.split('~'), N = st.data.values.length;
+      const qq = (q || '').split('.').map(x => Math.max(0, Math.min(100000, parseInt(x) || 0))).concat([0, 0, 0, 0]).slice(0, 4);
+      const ee = (ex || '').split('_').concat(['', '', '', '']).slice(0, 4).map(g => g.split(',').map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < N && g !== '').slice(0, 4));
+      const onv = Math.min(99.9, Math.max(1, +on || 90)), offv = Math.min(99, Math.max(0.1, +off || 10));
+      $('#on').value = onv; $('#off').value = offv; history.replaceState(null, '', location.pathname + `#on=${onv}&off=${offv}`);
+      showCard(qq, ee, onv, offv, '', true);
+    }
+    pools(); renderStats(); next();
+    if (!seen() && !shared) openIntro();
+  } catch (e) { $('#poolLine').innerHTML = `<span class="err">${e.message}</span>`; }
+})();
+</script>
+</body>
+</html>
