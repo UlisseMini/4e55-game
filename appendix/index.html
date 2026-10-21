@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4e:55 Appendix</title>
+<meta name="description" content="Methods, prompts, data and every experiment behind the InceptionV1 neuron 4e:55 thread.">
+<style>
+:root { --bg: #fbfaf7; --panel: #fff; --ink: #1d1d1b; --muted: #66645f; --line: #e2e0da; --accent: #2f5d8a; --code: #f2f0eb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a9892; --line: #34332f; --accent: #8fb3d9; --code: #262624; }
+}
+:root[data-theme="dark"] { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a9892; --line: #34332f; --accent: #8fb3d9; --code: #262624; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, Segoe UI, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 32px 16px 80px; }
+h1 { font-size: 28px; line-height: 1.25; margin: 0 0 8px; }
+h2 { font-size: 21px; margin: 48px 0 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+h3 { font-size: 17px; margin: 28px 0 8px; }
+a { color: var(--accent); }
+.lede { color: var(--muted); font-size: 17px; }
+nav.toc { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; margin: 20px 0; font-size: 15px; }
+nav.toc ol { margin: 6px 0; padding-left: 20px; } nav.toc li { margin: 2px 0; }
+figure { margin: 18px 0; }
+figure img { width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); background: #fff; display: block; }
+figcaption { color: var(--muted); font-size: 14px; margin-top: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+.wrap { overflow-x: auto; }
+pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+pre { background: var(--code); border-radius: 8px; padding: 12px 14px; white-space: pre-wrap; word-break: break-word; }
+code { background: var(--code); padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+.note { background: var(--panel); border-left: 3px solid var(--accent); padding: 8px 14px; margin: 14px 0; font-size: 15px; }
+.muted { color: var(--muted); }
+details summary { cursor: pointer; color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<h1>Predicting InceptionV1 neuron 4e:55: appendix</h1>
+<p class="lede">Methods, exact prompts, data and every experiment behind the thread, in enough detail to reproduce. The essay being tested is
+<a href="https://already-clean.goodfire.com">“Neural networks are already clean”</a>, which describes 4e:55 as a V-shape neuron: pointed things drive it,
+round ones push it negative. The game is <a href="../">here</a>.</p>
+
+<nav class="toc"><b>Contents</b>
+<ol>
+  <li><a href="#task">The task: what “fires” means</a></li>
+  <li><a href="#judge">How Claude predicts the neuron</a></li>
+  <li><a href="#sentences">Result 1: one-sentence descriptions</a></li>
+  <li><a href="#search">Result 2: searching for the best shape rule</a></li>
+  <li><a href="#essay">Result 3: giving Claude the essay</a></li>
+  <li><a href="#lookup">Baselines without Claude: class lookups</a></li>
+  <li><a href="#other">Other experiments</a></li>
+  <li><a href="#caveats">Caveats</a></li>
+  <li><a href="#data">Data and reproduction</a></li>
+</ol></nav>
+
+<h2 id="task">1. The task: what “fires” means</h2>
+<ul>
+  <li><b>Model.</b> InceptionV1 (GoogLeNet), the original TensorFlow/Lucid release, loaded with <code>lucent.modelzoo.inceptionv1(pretrained=True)</code>.
+    Input convention: RGB pixels in 0–255 minus 117.</li>
+  <li><b>Images.</b> ImageNet-1k from the Hugging Face dataset <code>ILSVRC/imagenet-1k</code>, all 50,000 validation and 1,281,167 training photos.
+    Each photo is resized (bicubic) so its short side is 224 px, center-cropped to 224×224 and stored as JPEG quality 90. That crop is what the
+    model sees and what the game shows.</li>
+  <li><b>The neuron's value on a photo.</b> Channel 55 of layer <code>mixed4e</code> after the ReLU is a 14×14 map. Its value is the maximum
+    over those 196 positions (its strongest response anywhere in the photo).</li>
+  <li><b>Normalization.</b> Values are divided by the neuron's maximum over all ~1.33M photos, so 1.0 is the strongest photo in ImageNet.</li>
+  <li><b>Fires / silent.</b> “Fires” means at least 30% of that maximum, which is the top 3.07% of training photos (the 96.9th percentile).
+    “Silent” means under 5%, the bottom 16.1%. The 30% cutoff matches the essay's own definition of a strong response; the 5% cutoff is ours.
+    Photos in between are left out.</li>
+  <li><b>Balanced sets.</b> Every test set has equal numbers of firing and silent photos, so guessing scores 50%.</li>
+</ul>
+<div class="note">This only tests the two extremes. It is a much easier task than predicting how strongly the neuron responds to an ordinary photo.</div>
+<h3>Photo sets</h3>
+<p>Drawn at random within each half, with fixed seeds. Each set is disjoint from every set built before it.</p>
+<div class="wrap"><table>
+<tr><th>Set</th><th>Source</th><th class="n">Fires</th><th class="n">Silent</th><th>Used for</th></tr>
+<tr><td>tune</td><td>train</td><td class="n">100</td><td class="n">100</td><td>scoring candidates during searches</td></tr>
+<tr><td>select</td><td>train</td><td class="n">100</td><td class="n">100</td><td>choosing among search finalists</td></tr>
+<tr><td>val</td><td>validation</td><td class="n">100</td><td class="n">100</td><td>every headline number on 200 photos, scored once</td></tr>
+<tr><td>val2</td><td>validation</td><td class="n">500</td><td class="n">500</td><td>the 1,000-photo essay-context comparison</td></tr>
+</table></div>
+<p class="muted">The sets are disjoint by photo, not by class: only 22% of firing val photos come from ImageNet classes with no firing photo in the
+tune set. Lists of every photo are in <a href="data/photo_sets.json">photo_sets.json</a>.</p>
+<figure><img src="fig/act_dists.png" alt="Histograms of peak activation for 4e:55 and seven random mixed4e neurons" loading="lazy">
+<figcaption>Distribution of the value over all 1.28M training photos (log scale), for 4e:55 and seven random neurons in the same layer.
+Dashed: 30% cutoff; dotted: 5%. 4e:55's shape is typical.</figcaption></figure>
+
+<h2 id="judge">2. How Claude predicts the neuron</h2>
+<p>Model <code>claude-opus-5-5</code>, effort <code>low</code>, <code>max_tokens</code> 4000. Each request contains one photo (the 224×224 crop), never
+any other photo, and never the photo's label. Claude answers with a probability 0–100 that the neuron fires; “says fires” means at least 50.
+Accuracy is the share of photos called correctly. AUC uses the probabilities as scores.</p>
+<p>System prompt, with the description inserted:</p>
+<pre>You are testing how well a written description of a neuron lets someone predict it.
+The neuron is a single unit inside an image-classification network. On each image it either fires strongly (ON) or barely fires (OFF).
+Judge the image using only the description below. About half of all images are ON.
+
+&lt;description&gt;
+{description}
+&lt;/description&gt;</pre>
+<p>User turn: the photo, then <code>What is the probability (0-100) that the neuron is ON for this image? Answer with only the number.</code></p>
+<p class="muted">One answer across all description runs had no number. It is stored as null and counted as “silent”.</p>
+
+<h2 id="sentences">3. Result 1: one-sentence descriptions</h2>
+<p>All on the same 200 val photos, each scored once.</p>
+<div class="wrap"><table>
+<tr><th>Description</th><th class="n">Accuracy</th><th class="n">AUC</th><th class="n">Fires called fires</th><th class="n">Silent called silent</th></tr>
+<tr><td>“V-shaped”</td><td class="n">53.0%</td><td class="n">0.57</td><td class="n">39/100</td><td class="n">67/100</td></tr>
+<tr><td>“It's a V-shape neuron: pointed things drive it and round ones push it negative, whatever the label.” (the essay's sentence)</td><td class="n">56.0%</td><td class="n">0.60</td><td class="n">43/100</td><td class="n">69/100</td></tr>
+<tr><td>“Pointed things make it fire; round things don't.”</td><td class="n">56.5%</td><td class="n">0.59</td><td class="n">41/100</td><td class="n">72/100</td></tr>
+<tr><td>“Fires on V-shaped faces: eyes and ears converging to a small nose tip; flat, round or side-on heads stay off.” (best pointedness rule from the search, §4)</td><td class="n">73.0%</td><td class="n">0.73</td><td class="n">50/100</td><td class="n">96/100</td></tr>
+<tr><td>“Fires when sharp points jut from a head (ears, snout tip) or a low wide box has a sloped front; round tops off.” (best geometry rule from the search, §4)</td><td class="n">81.5%</td><td class="n">0.89</td><td class="n">72/100</td><td class="n">91/100</td></tr>
+<tr><td>“Close-up, front-facing faces of cats, foxes and small fluffy dogs; also cars.”</td><td class="n">90.0%</td><td class="n">0.95</td><td class="n">87/100</td><td class="n">93/100</td></tr>
+<tr><td>“Faces of cats, foxes, fluffy dogs (not pugs, schnauzers) and small monkeys; also cars, vans, pool tables, printers.” (tuned, §4)</td><td class="n">94.5%</td><td class="n">0.98</td><td class="n">94/100</td><td class="n">95/100</td></tr>
+</table></div>
+<p class="muted">With 200 photos, an accuracy has a 95% confidence interval of roughly ±6–7 points.</p>
+<figure><img src="fig/tweet2_bars.png" alt="Bar chart: V-shaped 53%, pointed vs round 57%, noun sentence 90%, class lookup 94%" loading="lazy">
+<figcaption>The thread's chart. The last bar is the lookup from the network's own predicted class (§6), measured on all 9,561 val photos that fire or are silent.</figcaption></figure>
+<figure><img src="fig/sentence_bars.png" alt="Every one-sentence description and its accuracy" loading="lazy"><figcaption>All seven descriptions.</figcaption></figure>
+<figure><img src="fig/quad_pointed_round.png" alt="Four-quadrant grid for pointed vs round" loading="lazy">
+<figcaption>Where “pointed fires, round doesn't” is right and wrong. Counts and bars cover all 200 photos. The four photos in each cell are the
+ones Claude was most confident about, not a random sample.</figcaption></figure>
+
+<h2 id="search">4. Result 2: searching for the best shape rule</h2>
+<p>To give the essay's idea its best shot, Claude searched for the strongest rule in its spirit.</p>
+<ul>
+  <li><b>Allowed words.</b> Geometry (points, V's, tapering, convergence, angles, roundness, curvature, symmetry, orientation, scale) plus generic
+    part words (face, head, ears, eyes, nose, snout, muzzle, front, tip, edge).</li>
+  <li><b>Blocked words</b>, enforced by this check on every candidate:
+<pre>\b(cats?|kitten|fox(es)?|dogs?|pupp(y|ies)|wol(f|ves)|cars?|vans?|trucks?|vehicles?|bus|train|tables?|animals?|mammals?|pets?|birds?|monkeys?|
+breeds?|terriers?|spaniels?|pug|machines?|fur(ry)?|fluff(y)?|hair|glossy|shiny|sheen|gleam\w*|metal|paint\w*|orange|red|white|black|
+colou?r\w*|textur\w*|soft|cute|creature)\b</pre></li>
+  <li><b>Each round.</b> Claude (Opus 5.5, adaptive thinking) saw the essay's claim, these constraints, the best candidates so far with their tune
+    accuracy and error lists, and 24 labelled tune photos, mostly current errors. It proposed 6 new rules of at most 115 characters.
+    Candidates were scored on the tune set with the judge in §2.</li>
+  <li><b>Two tracks.</b> “Pointedness”: rules must stay about points, V's or tapering (18 candidates). “Geometry”: any geometric
+    property (20 candidates, counting the starting sentences).</li>
+  <li><b>Selection.</b> The top candidates were scored on the select set; the best of each track was scored once on val.</li>
+</ul>
+<div class="wrap"><table>
+<tr><th>Finalist</th><th class="n">Select</th><th class="n">Val</th></tr>
+<tr><td>Geometry: “Fires when sharp points jut from a head (ears, snout tip) or a low wide box has a sloped front; round tops off.”</td><td class="n">83.0%</td><td class="n">81.5%</td></tr>
+<tr><td>Geometry: “Fires on heads with pointed ears or a tapering muzzle, and on long low boxes; droopy round heads stay off.”</td><td class="n">82.0%</td><td class="n">—</td></tr>
+<tr><td>Pointedness: “Fires on V-shaped faces: eyes and ears converging to a small nose tip; flat, round or side-on heads stay off.”</td><td class="n">75.5%</td><td class="n">73.0%</td></tr>
+<tr><td>Pointedness: “Fires when edges taper to a point at the front of a long low shape or a face; …”</td><td class="n">72.0%</td><td class="n">—</td></tr>
+<tr><td>Essay's sentence (reference)</td><td class="n">52.5%</td><td class="n">56.0%</td></tr>
+<tr><td>“Pointed things make it fire; round things don't.” (reference)</td><td class="n">55.5%</td><td class="n">56.5%</td></tr>
+</table></div>
+<p>The best geometry rule gets most of its accuracy by describing the two categories in disguise: “sharp points jutting from a head” covers
+pointy-eared animals, “a low wide box with a sloped front” covers cars. It still misses round fluffy faces and fires on armadillos, hogs and lizards.</p>
+<figure><img src="fig/tweet3_steelman_bars.png" alt="Best pointedness rule 73%, best geometry rule 82%, noun sentence 90%, class lookup 94%" loading="lazy">
+<figcaption>The thread's steelman chart.</figcaption></figure>
+<details><summary>Four-quadrant grids for the searched rules and the essay's sentence</summary>
+<figure><img src="fig/quad_shape_spirit.png" alt="" loading="lazy"><figcaption>Best pointedness rule. Precise but blind to cars.</figcaption></figure>
+<figure><img src="fig/quad_shape_geo.png" alt="" loading="lazy"><figcaption>Best geometry rule.</figcaption></figure>
+<figure><img src="fig/quad_shape_nick.png" alt="" loading="lazy"><figcaption>The essay's sentence.</figcaption></figure>
+<figure><img src="fig/dis_geo_vs_nouns_win.png" alt="" loading="lazy"><img src="fig/dis_geo_vs_nouns_lose.png" alt="" loading="lazy" style="margin-top:8px">
+<figcaption>Photos where the geometry rule beats, then loses to, the noun sentence.</figcaption></figure>
+</details>
+<h3>Tuning the noun sentence</h3>
+<p>The same loop, without word restrictions and with a length cap of 1.5× the original sentence (115 characters): 12 candidates scored on tune,
+5 finalists on select, the winner scored once on val. Original: 88.0% select, 90.0% val. Winner: “Faces of cats, foxes, fluffy dogs (not pugs,
+schnauzers) and small monkeys; also cars, vans, pool tables, printers.”, 92.5% select, 94.5% val. Every candidate and its per-photo
+probabilities are in <a href="data/description_runs.json">description_runs.json</a>.</p>
+
+<h2 id="essay">5. Result 3: giving Claude the essay</h2>
+<p>Does the essay's explanation help a judge beyond what Claude already knows about this famous neuron?</p>
+<h3>Five prompts on the 200 val photos</h3>
+<div class="wrap"><table>
+<tr><th>What Claude was given</th><th class="n">Accuracy</th><th class="n">AUC</th></tr>
+<tr><td>Only the neuron's identity (“channel 55 of mixed4e of InceptionV1 … use whatever you know”)</td><td class="n">48.0%</td><td class="n">0.51</td></tr>
+<tr><td>The essay's 4e:55 paragraphs</td><td class="n">74.0%</td><td class="n">0.85</td></tr>
+<tr><td>The essay's 4e:55 paragraphs + screenshot of its figure</td><td class="n">74.5%</td><td class="n">0.85</td></tr>
+<tr><td>Screenshot of the essay's figure only</td><td class="n">81.0%</td><td class="n">0.88</td></tr>
+<tr><td>Identity + “this is the neuron discussed in Distill's Circuits thread … a well-known polysemantic neuron”</td><td class="n">84.0%</td><td class="n">0.96</td></tr>
+</table></div>
+<h3>The head-to-head on 1,000 fresh photos</h3>
+<p>Two prompts, identical except that B adds the essay. Both explain the exact ON/OFF cutoffs and ask for 2–4 sentences of reasoning before
+the probability. One user message per photo, no system prompt.</p>
+<p><b>A (Circuits pointer):</b></p>
+<pre>You are predicting a single neuron: channel 55 of layer mixed4e ("4e:55") of InceptionV1 (GoogLeNet), the convolutional network trained on
+ImageNet-1k classification; specifically the original model released with TensorFlow/Lucid. The neuron's value on an image is its strongest
+response anywhere in the image, measured as a fraction of the neuron's maximum over all ~1.33M ImageNet images. ON means that value is at least
+30% of the maximum; OFF means it is below 5%. Images in between are never shown. About half of the images you will see are ON. Use whatever you
+know about this network and this neuron. This is the neuron discussed in Distill's Circuits thread (the Feature Visualization and Zoom In
+articles), where it was presented as a well-known polysemantic neuron.
+
+Here is a new photo:
+[photo]
+In 2-4 sentences, say what in the photo matters for this neuron and why. Then on the last line write only the probability (0-100) that the neuron is ON.</pre>
+<p><b>B (Circuits pointer + essay):</b> the same, with this inserted before “Here is a new photo:”</p>
+<pre>New research from Nick Cammarata (the essay "Neural networks are already clean", Goodfire), on this neuron, verbatim:
+
+[the essay's paragraphs on 4e:55, verbatim, with citation pop-ups removed]
+
+The essay's figure for this neuron (its caption: "[the figure's caption]"):
+[screenshot of the essay's 4e:55 figure: inputs, readers, renders and the pointed/round photo panel]</pre>
+<div class="wrap"><table>
+<tr><th>Photos</th><th class="n">A: Circuits pointer</th><th class="n">B: + essay</th><th>Paired test</th></tr>
+<tr><td>200 val</td><td class="n">90.5%</td><td class="n">85.5%</td><td>—</td></tr>
+<tr><td>1,000 val2 (500 fire, 500 silent)</td><td class="n">92.0%</td><td class="n">85.5%</td><td>97 photos only A gets right, 32 only B; McNemar p ≈ 8.5×10⁻⁹</td></tr>
+</table></div>
+<p>Shape words (point, pointed, pointy, round, rounded, V-shape, wedge, angular) appear in 100% of B's reasoning and 38% of A's. They appear in
+all 97 photos that B gets wrong and A gets right; 68 of those 97 are photos where the neuron fires.</p>
+<figure><img src="fig/th_prompts_prior.png" alt="" loading="lazy"><figcaption>Left: the five 200-photo prompts. Right: the 1,000-photo head-to-head.</figcaption></figure>
+<p class="muted">All of Claude's reasoning, per photo, is in <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a> and
+<a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>. This used one judge model; we have not repeated it with another.</p>
+
+<h2 id="lookup">6. Baselines without Claude: class lookups</h2>
+<p>A table of how often each ImageNet class fires, fit on training photos and applied to validation photos. Balanced accuracy equals accuracy on a 50/50 set.</p>
+<div class="wrap"><table>
+<tr><th>Predictor</th><th class="n">≥30% vs &lt;5% (thread)</th><th class="n">≥30% vs &lt;30%</th><th class="n">top 10% vs bottom 10%</th></tr>
+<tr><td>True ImageNet label → table</td><td class="n">92.5%</td><td class="n">88.3%</td><td class="n">86.5%</td></tr>
+<tr><td>Network's own top-1 prediction → table</td><td class="n">93.6%</td><td class="n">88.9%</td><td class="n">87.6%</td></tr>
+<tr><td>Logistic regression on the network's 1000 output probabilities</td><td class="n">93.8%</td><td class="n">89.4%</td><td class="n">88.0%</td></tr>
+<tr><td>Logistic regression on the 1000 logits*</td><td class="n">97.7%</td><td class="n">93.4%</td><td class="n">94.7%</td></tr>
+<tr><td>Val photos used</td><td class="n">9,561</td><td class="n">50,000</td><td class="n">10,065</td></tr>
+</table></div>
+<p class="muted">*The logits are computed downstream of 4e:55, so this partly reads the neuron back. Treat it as an upper bound, not a baseline.
+Split by whether the network's top-1 is correct, the true-label table gets 94.1% where it is right and 87.7% where it is wrong; the predicted-class
+table gets 92.0% even where the network is wrong. Raw numbers: <a href="data/class_lookup_30_5.json">30/5</a>,
+<a href="data/class_lookup_30_vs_rest.json">30 vs rest</a>, <a href="data/class_lookup_p90_p10.json">p90/p10</a>.</p>
+<figure><img src="fig/breed_ladder.png" alt="Share of each class's photos on which 4e:55 fires" loading="lazy">
+<figcaption>Share of each class's photos on which it fires. Pointy-eared German shepherds and Dobermans: 0.3%; Persian cats: 62.8%. Across 118 dog
+breeds, firing rate correlates with how cute the breed is (Spearman ρ = +0.61) and how fox-like (+0.47), more than with pointed ears (+0.29);
+aggression −0.23. Traits were rated by Claude from breed names alone.</figcaption></figure>
+
+<h2 id="other">7. Other experiments</h2>
+<p class="muted">Run along the way; kept for completeness. Most use the same cutoffs and judge as above.</p>
+
+<h3>7.1 Pointed vs round with real proportions</h3>
+<p>400 random training photos (200 firing, 200 silent). Claude labelled each photo's main subject pointed, round or neither. Firing: 59 pointed,
+88 round, 53 neither. Silent: 35 pointed, 99 round, 66 neither. Of the 281 pointed-or-round photos, “pointed fires, round doesn't” is right on 158 (56%).</p>
+<figure><img src="fig/quad_mass_random.png" alt="" loading="lazy"><figcaption>Random examples from each cell, sized by real counts.</figcaption></figure>
+<details><summary>The worst counterexamples, same counts</summary><figure><img src="fig/quad_mass_worst.png" alt="" loading="lazy"></figure></details>
+
+<h3>7.2 What it responds to at each level</h3>
+<figure><img src="fig/numberline.png" alt="" loading="lazy"><figcaption>Most common kinds of photo at each activation level.</figcaption></figure>
+<figure><img src="fig/pct_sheet.jpg" alt="Random photos from the bottom and top 10%" loading="lazy"><figcaption>48 random photos from its bottom 10% (at most 4.1% of max)
+and top 10% (at least 19.2%).</figcaption></figure>
+
+<h3>7.3 A searched non-noun feature: “sleek sheen + an eye”</h3>
+<p>An earlier search over about 70 descriptions (gaze, mood, cuteness, texture, lighting, kiki/bouba and more) found two that predicted as well
+as nouns on 60 held-out photos: “sleek sheen + an eye” got 83% where the noun description got 85%. On a crop centred where the neuron
+responds, it got 97% (nouns 93%), but the crop does part of the work. On a harder set (photos whose class label predicts wrongly) it dropped to 57%.</p>
+<figure><img src="fig/quad_sheen.png" alt="" loading="lazy"></figure>
+<p>Filtering real firing photos showed it was a correlate, not the cause. Compressing highlights kept 85% of the response for animals and 92% for
+cars; erasing the catchlights in eyes kept 99%. Slight blur (σ = 1 px) cut the neuron by 23% for animals while the model's confidence in the
+right class fell 6%.</p>
+<figure><img src="fig/filter_bars.png" alt="" loading="lazy"><figcaption>100 firing photos per group.</figcaption></figure>
+<figure><img src="fig/filter_strip.png" alt="" loading="lazy"></figure>
+
+<h3>7.4 The wiring</h3>
+<p>4e:55 = ReLU(bias + weighted sum of the 528 channels of <code>mixed4d</code>), through mixed4e's 1×1 branch (mixed4e has 832 channels: 1×1
+branch 0–255, 3×3 256–575, 5×5 576–703, pool 704–831).</p>
+<figure><img src="fig/weights_fig.png" alt="" loading="lazy"><figcaption>Strongest inputs: weight × the input's 99th-percentile activation, as % of 4e:55's max.</figcaption></figure>
+<figure><img src="fig/th_inputs_readers.png" alt="" loading="lazy">
+<figcaption>Left: share of 4e:55's positive input on its top 1,000 photos. The essay's fox-snout input (4d:493) is first at 44.9%; its “van front”
+input (4d:201) ranks 75th (0.1%). Right: readers in mixed5a, ranked by how much their peak on their own top-50 photos drops when 4e:55 is
+resampled from another photo. The essay's three readers rank 2nd, 4th and 6th; zero and mean ablation give the same top 10. The essay doesn't
+state its method, so these rankings use ours.</figcaption></figure>
+
+<h3>7.5 How spread out the layer's information is</h3>
+<figure><img src="fig/th_linear.png" alt="" loading="lazy"><figcaption>Linear classifiers on each channel's spatial max (trained on all training photos,
+tested on val). mixed4e: 63.8% top-1 (84.8% top-5) vs 67.6% for the full network. Mean pooling instead of max: 60.9% (trained on 300k photos). 4e:55 alone: 0.2% (chance 0.1%).</figcaption></figure>
+<figure><img src="fig/th_topk.png" alt="" loading="lazy"><figcaption>Choosing the k channels with the most unique information (the drop when a channel is
+removed from the full classifier) does no better than k random channels. Each class draws on about 300 of the 832 channels.</figcaption></figure>
+
+<h3>7.6 Knocking it out</h3>
+<figure><img src="fig/th_ablate.png" alt="" loading="lazy"><figcaption>ImageNet val top-1 changes by −0.03 points (resampling from another photo,
+averaged over 3 runs), −0.03 (replacing with its mean) and −0.06 (zeroing). We have not run the same ablation on random neurons for comparison.</figcaption></figure>
+
+<h2 id="caveats">8. Caveats</h2>
+<ul>
+  <li>The judge is Claude (one model), not people.</li>
+  <li>Only the extremes are tested (top 3% vs bottom 16%), which is far easier than predicting graded responses on ordinary photos.</li>
+  <li>The 30% cutoff follows the essay's definition of a strong response; the 5% cutoff is ours.</li>
+  <li>Test photos are new, but most firing val photos come from classes also seen during tuning.</li>
+  <li>Result 1 and 2 numbers use 200 photos each (about ±6–7 points).</li>
+  <li>One neuron, one network.</li>
+</ul>
+
+<h2 id="data">9. Data and reproduction</h2>
+<p><b>Photo ids.</b> A gid below 50,000 is row <i>gid</i> of the validation split of <code>ILSVRC/imagenet-1k</code>, reading its parquet shards in
+filename order. Otherwise it is row <i>gid − 50,000</i> of the training split, read the same way.</p>
+<div class="wrap"><table>
+<tr><th>File</th><th>Contents</th></tr>
+<tr><td><a href="data/photo_sets.json">photo_sets.json</a></td><td>tune, select, val and val2: gid, fires or not, value as a fraction of the max, ImageNet class</td></tr>
+<tr><td><a href="data/description_runs.json">description_runs.json</a></td><td>every description scored (70 runs): text, set, accuracy, AUC, confusion counts, Claude's probability for each photo</td></tr>
+<tr><td><a href="data/essay_context_val200.json">essay_context_val200.json</a></td><td>the five essay-context prompts on the 200 val photos: probability per photo</td></tr>
+<tr><td><a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>, <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a></td><td>the A/B head-to-head: Claude's reasoning and probability per photo</td></tr>
+<tr><td><a href="data/class_lookup_30_5.json">class_lookup_*.json</a></td><td>class-lookup baselines under each cutoff</td></tr>
+<tr><td><a href="../data.json">../data.json</a>, <a href="../maps.bin">../maps.bin</a></td><td>the game's ~32k photos: value, class, percentile, sampling weight; 14×14 heatmaps (uint8, 196 bytes per photo)</td></tr>
+</table></div>
+</main>
+</body>
+</html>
