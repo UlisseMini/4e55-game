@@ -197,16 +197,43 @@ In 2-4 sentences, say what in the photo matters for this neuron and why. Then on
 
 The essay's figure for this neuron (its caption: "[the figure's caption]"):
 [screenshot of the essay's 4e:55 figure: inputs, readers, renders and the pointed/round photo panel]</pre>
+<figure><img src="fig/prompt_ab.png" alt="The full message sent to Claude, with the essay block marked as added only in version B" loading="lazy">
+<figcaption>The exact message, as sent for one photo. The orange block (the essay's intro line, its three 4e:55 paragraphs, the caption and the figure
+screenshot) is added only in B. The figure is downscaled to fit 1500×1500 px before sending.</figcaption></figure>
+<p><b>C (control):</b> identical to B, including the “New research from Nick Cammarata…” line, but the essay's three paragraphs and the figure caption
+are replaced by lorem ipsum of the same character lengths, and the figure screenshot by a pure white PNG of the same pixel size.</p>
+<p>All three: Claude Opus 5.5 (<code>claude-opus-5-5</code>), effort <code>low</code>, <code>max_tokens</code> 4000, one user message per photo,
+no system prompt. The probability is the last number on the last line of the reply; at least 50 counts as “fires”.</p>
 <div class="wrap"><table>
-<tr><th>Photos</th><th class="n">A: Circuits pointer</th><th class="n">B: + essay</th><th>Paired test</th></tr>
-<tr><td>200 val</td><td class="n">90.5%</td><td class="n">85.5%</td><td>—</td></tr>
-<tr><td>1,000 val2 (500 fire, 500 silent)</td><td class="n">92.0%</td><td class="n">85.5%</td><td>97 photos only A gets right, 32 only B; McNemar p ≈ 8.5×10⁻⁹</td></tr>
+<tr><th>Photos</th><th class="n">A: Circuits pointer</th><th class="n">C: + lorem ipsum</th><th class="n">B: + essay</th></tr>
+<tr><td>200 val</td><td class="n">90.5%</td><td class="n">—</td><td class="n">85.5%</td></tr>
+<tr><td>1,000 val2 (500 fire, 500 silent)</td><td class="n">92.0% <span class="muted">(90.2–93.5)</span></td><td class="n">90.2%</td><td class="n">85.5% <span class="muted">(83.2–87.5)</span></td></tr>
 </table></div>
-<p>Shape words (point, pointed, pointy, round, rounded, V-shape, wedge, angular) appear in 100% of B's reasoning and 38% of A's. They appear in
-all 97 photos that B gets wrong and A gets right; 68 of those 97 are photos where the neuron fires.</p>
+<p>Paired tests on the same 1,000 photos (exact McNemar: a two-sided binomial test on the photos where exactly one prompt is right):</p>
+<ul>
+  <li>A vs B: 97 photos only A gets right, 32 only B; p ≈ 8.5×10⁻⁹.</li>
+  <li>A vs C: 41 vs 23; p = 0.033. A long irrelevant block costs about 2 points.</li>
+  <li>C vs B: 99 vs 52; p = 0.00016. The essay's content costs about 5 points on top of that.</li>
+</ul>
+<p class="muted">Intervals in parentheses are 95% Wilson intervals on each accuracy alone; for comparing prompts on the same photos, the paired tests are the right ones.</p>
+<figure><img src="fig/tweet_essay_bars.png" alt="" loading="lazy"><figcaption>The thread's chart, with 95% Wilson intervals. Bars 1–2: the same 1,000 photos;
+bar 3: the noun sentence on 200 val photos; bar 4: the predicted-class lookup on 9,561 val photos (§6), its balanced accuracy treated as a proportion.</figcaption></figure>
+<h3>What changes in Claude's reasoning</h3>
+<p>Shape words (regex <code>\b(point|pointed|pointy|round|rounded|V-shape|V shape|wedge|angular)</code>, case-insensitive) appear in 100% of B's
+replies and 38% of A's. The two prompts disagree on 129 photos: on 97 the essay makes Claude wrong (68 of them firing photos it now calls silent,
+mostly round, flat-faced animals such as hamsters, Pekinese, Persian cats and otters), and on 32 it makes Claude right.</p>
+<figure><img src="fig/quad_ab_agree_rand.png" alt="" loading="lazy"><figcaption>The two prompts against each other. Rows: A's call; columns: B's.
+Red frames and bar segments: the essay made Claude wrong; green: right. Disagreement boxes show photos in proportion to that split; examples are random.</figcaption></figure>
+<details><summary>Same grid with the biggest changes as examples</summary><figure><img src="fig/quad_ab_agree_conf.png" alt="" loading="lazy"></figure></details>
+<figure><img src="fig/cot_cards.png" alt="" loading="lazy"><figcaption>12 of the 129 disagreements, drawn at random (seed 1) in the 97 : 32 proportion
+and, within each, in proportion to firing vs silent photos. Each quote is one sentence of Claude's reply. For B, it is the sentence with the most shape
+words arguing in the direction Claude moved (round/blunt/“pushes it negative” when its probability fell; pointed/V/tapering when it rose); for A, the
+sentence with the most face/object cues, skipping its stock description of the neuron. Cards where B had no such sentence would be skipped; none were.</figcaption></figure>
+<details><summary>A and B each against the truth (random examples)</summary>
+<figure><img src="fig/quad_ab_A_rand.png" alt="" loading="lazy"></figure><figure><img src="fig/quad_ab_B_rand.png" alt="" loading="lazy"></figure></details>
 <figure><img src="fig/th_prompts_prior.png" alt="" loading="lazy"><figcaption>Left: the five 200-photo prompts. Right: the 1,000-photo head-to-head.</figcaption></figure>
-<p class="muted">All of Claude's reasoning, per photo, is in <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a> and
-<a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>. This used one judge model; we have not repeated it with another.</p>
+<p class="muted">All of Claude's replies, per photo and per prompt (A, B and C), are in <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a>
+and <a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>. This used one judge model; we have not repeated it with another.</p>
 
 <h2 id="lookup">6. Baselines without Claude: class lookups</h2>
 <p>A table of how often each ImageNet class fires, fit on training photos and applied to validation photos. Balanced accuracy equals accuracy on a 50/50 set.</p>
@@ -272,13 +299,22 @@ removed from the full classifier) does no better than k random channels. Each cl
 <figure><img src="fig/th_ablate.png" alt="" loading="lazy"><figcaption>ImageNet val top-1 changes by −0.03 points (resampling from another photo,
 averaged over 3 runs), −0.03 (replacing with its mean) and −0.06 (zeroing). We have not run the same ablation on random neurons for comparison.</figcaption></figure>
 
+<h3>7.7 The game</h3>
+<p>The <a href="../">game</a> uses 31,879 photos chosen to cover every percentile band of the neuron's response, which over-represents the rare strong
+photos. Each round flips a fair coin for ON or OFF, then draws a photo from that side with weight = (how common its 0.5-percentile band is in
+ImageNet) / (how common it is in the pool), so draws match ImageNet's real distribution within each side, like the Claude test sets. Default cutoffs:
+ON ≥ the 96.9th percentile and OFF ≤ the 16.1st, which select the same photos as ≥30% and &lt;5% of the max (apart from 9 photos at the boundary).
+Percentiles are over all 1.28M training photos. The heatmap is the 14×14 response map, brighter where the neuron responds.</p>
+<figure><img src="fig/quad_lookup.png" alt="" loading="lazy"><figcaption>For comparison with the Claude grids: the predicted-class lookup (§6) on the
+same 200 val photos as §3, 97% correct there (93.6% over all 9,561 val photos).</figcaption></figure>
+
 <h2 id="caveats">8. Caveats</h2>
 <ul>
   <li>The judge is Claude (one model), not people.</li>
   <li>Only the extremes are tested (top 3% vs bottom 16%), which is far easier than predicting graded responses on ordinary photos.</li>
   <li>The 30% cutoff follows the essay's definition of a strong response; the 5% cutoff is ours.</li>
   <li>Test photos are new, but most firing val photos come from classes also seen during tuning.</li>
-  <li>Result 1 and 2 numbers use 200 photos each (about ±6–7 points).</li>
+  <li>Result 1 and 2 numbers use 200 photos each (about ±6–7 points). The essay comparison uses 1,000.</li>
   <li>One neuron, one network.</li>
 </ul>
 
@@ -290,7 +326,7 @@ filename order. Otherwise it is row <i>gid − 50,000</i> of the training split,
 <tr><td><a href="data/photo_sets.json">photo_sets.json</a></td><td>tune, select, val and val2: gid, fires or not, value as a fraction of the max, ImageNet class</td></tr>
 <tr><td><a href="data/description_runs.json">description_runs.json</a></td><td>every description scored (70 runs): text, set, accuracy, AUC, confusion counts, Claude's probability for each photo</td></tr>
 <tr><td><a href="data/essay_context_val200.json">essay_context_val200.json</a></td><td>the five essay-context prompts on the 200 val photos: probability per photo</td></tr>
-<tr><td><a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>, <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a></td><td>the A/B head-to-head: Claude's reasoning and probability per photo</td></tr>
+<tr><td><a href="data/reasoning_val200.jsonl">reasoning_val200.jsonl</a>, <a href="data/reasoning_val2_1000.jsonl">reasoning_val2_1000.jsonl</a></td><td>the head-to-head (prompts A, B and the lorem-ipsum control C): Claude's full reply and probability per photo</td></tr>
 <tr><td><a href="data/class_lookup_30_5.json">class_lookup_*.json</a></td><td>class-lookup baselines under each cutoff</td></tr>
 <tr><td><a href="../data.json">../data.json</a>, <a href="../maps.bin">../maps.bin</a></td><td>the game's ~32k photos: value, class, percentile, sampling weight; 14×14 heatmaps (uint8, 196 bytes per photo)</td></tr>
 </table></div>
