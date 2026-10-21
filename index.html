@@ -96,8 +96,8 @@ details { font-size: 12px; color: var(--muted); margin-top: 10px; }
     <details><summary>About</summary>
       Each photo is shown as the 224×224 crop the network actually sees. Cutoffs are percentiles of 4e:55's activation over all 1.33M ImageNet photos
       (its value on a photo = its strongest response anywhere in the image). Default: ON = top 3.1% (at least 30% of its max), OFF = bottom 16.1% (under 5% of its max). Half the trials are ON photos and half OFF,
-      each drawn in proportion to how common they are in ImageNet; photos in between are never shown. After you answer you see the photo's percentile, its
-      peak as % of the neuron's max, and a heatmap (bright where it fires). Your history stays in this browser.
+      each drawn in proportion to how common they are in ImageNet; photos in between are never shown. After you answer you see the photo's percentile
+      and a heatmap (bright where it fires). Your history stays in this browser.
     </details>
   </section>
   <aside class="card">
@@ -180,7 +180,7 @@ async function answer(guess) {
 function showFeedback(r) {
   cv.className = r.correct ? 'good' : 'bad';
   $('#feedback').innerHTML = `<div class="verdict ${r.correct ? 'good' : 'bad'}">${r.correct ? 'Correct' : 'Wrong'} — it was ${r.truth ? 'ON' : 'OFF'}</div>
-     <div>this photo is at the <b>${r.pct.toFixed(1)}th percentile</b> for this neuron (peak ${(100 * r.frac).toFixed(1)}% of its max) · ImageNet class: ${r.cls}</div>`;
+     <div>this photo is at the <b>${r.pct.toFixed(1)}th percentile</b> for this neuron · ImageNet class: ${r.cls}</div>`;
 }
 
 function draw() {
