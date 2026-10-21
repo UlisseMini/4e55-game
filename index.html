@@ -320,7 +320,7 @@ function cutFracs() {  // % of max at the cutoffs, read off the photo pool
 const fmt = x => (+x).toFixed(x < 10 ? 1 : 0);
 function explain() {
   const { on, off } = cut(), { onF, offF } = cutFracs(), top = +(100 - on).toFixed(1);
-  $('#task').innerHTML = `Is this photo in the neuron's <b class="on">top ${top}%</b> (peak ≥ ${fmt(onF)}% of its max) or its <b class="off">bottom ${off}%</b> (≤ ${fmt(offF)}% of max)? Half are each, so chance is 50%.`;
+  $('#task').innerHTML = `Is this photo in the neuron's <b class="on">top ${top}%</b> or its <b class="off">bottom ${off}%</b>? Half are each, so chance is 50%.`;
   $('#introBody').innerHTML = `
     <p>InceptionV1 is an image classifier. Neuron <b>4e:55</b> is one unit inside it, known as a "cats and cars" neuron.</p>
     <p>Each round shows one photo. Guess whether the neuron responds to it strongly or barely at all:</p>
