@@ -42,7 +42,7 @@ details summary { cursor: pointer; color: var(--accent); }
 <h1>Predicting InceptionV1 neuron 4e:55: appendix</h1>
 <p class="lede">Methods, exact prompts, data and every experiment behind the thread, in enough detail to reproduce. The essay being tested is
 <a href="https://already-clean.goodfire.com">“Neural networks are already clean”</a>, which describes 4e:55 as a V-shape neuron: pointed things drive it,
-round ones push it negative. The game is <a href="../">here</a>.</p>
+round ones push it negative. The game is <a href="../">here</a>. The thread's first image is explained <a href="#opening">in §3</a>.</p>
 
 <nav class="toc"><b>Contents</b>
 <ol>
@@ -122,6 +122,37 @@ Judge the image using only the description below. About half of all images are O
 <figure><img src="fig/quad_pointed_round.png" alt="Four-quadrant grid for pointed vs round" loading="lazy">
 <figcaption>Where “pointed fires, round doesn't” is right and wrong. Counts and bars cover all 200 photos. The four photos in each cell are the
 ones Claude was most confident about, not a random sample.</figcaption></figure>
+
+<h3 id="opening">The thread's first image (hand-picked)</h3>
+<figure><img src="fig/quad_handpicked_essay.png" alt="The essay's figure on top; below, twelve hand-picked ImageNet photos in a 2×2 grid of pointed/round by fires/silent" loading="lazy">
+<figcaption>Top: a screenshot of the essay's figure for 4e:55. Bottom: twelve ImageNet photos, three per combination.</figcaption></figure>
+<p>This image is an <b>illustration, not a measurement</b>. I picked the photos by hand to show that all four combinations of
+pointed/round and fires/silent exist, and sorted them into pointed and round by eye. Rows use the measured value and the cutoffs from §1;
+columns are what the essay's rule predicts (pointed: fires, round: silent). How often each combination happens is what the measured results
+measure: the same grid for Claude given the essay's sentence, on 200 photos nobody picked, is below (56% correct).</p>
+<div class="wrap"><table>
+<tr><th>Photo</th><th class="n">gid</th><th>Sorted as</th><th class="n">Value (% of max)</th><th>Neuron</th></tr>
+<tr><td>kit fox</td><td class="n">591816</td><td>pointed</td><td class="n">79.2%</td><td>fires</td></tr>
+<tr><td>Siamese cat</td><td class="n">659851</td><td>pointed</td><td class="n">84.8%</td><td>fires</td></tr>
+<tr><td>red fox</td><td class="n">396688</td><td>pointed</td><td class="n">83.1%</td><td>fires</td></tr>
+<tr><td>Persian cat</td><td class="n">382670</td><td>round</td><td class="n">81.5%</td><td>fires</td></tr>
+<tr><td>Pomeranian</td><td class="n">328210</td><td>round</td><td class="n">65.1%</td><td>fires</td></tr>
+<tr><td>hamster</td><td class="n">853275</td><td>round</td><td class="n">62.2%</td><td>fires</td></tr>
+<tr><td>German shepherd</td><td class="n">727517</td><td>pointed</td><td class="n">2.6%</td><td>silent</td></tr>
+<tr><td>obelisk</td><td class="n">1278449</td><td>pointed</td><td class="n">2.5%</td><td>silent</td></tr>
+<tr><td>stupa</td><td class="n">557092</td><td>pointed</td><td class="n">0.0%</td><td>silent</td></tr>
+<tr><td>golf ball</td><td class="n">610076</td><td>round</td><td class="n">1.8%</td><td>silent</td></tr>
+<tr><td>orange</td><td class="n">1126419</td><td>round</td><td class="n">1.9%</td><td>silent</td></tr>
+<tr><td>soccer ball</td><td class="n">709969</td><td>round</td><td class="n">0.0%</td><td>silent</td></tr>
+</table></div>
+<p class="muted">Labels in the image round the value to a whole percent. Script: <code>quad_handpicked.py</code> (not published; it only lays out the photos above).</p>
+<figure><img src="fig/quad_essay_rand.png" alt="Measured quadrant grid for Claude given the essay's sentence on 200 val photos" loading="lazy">
+<figcaption>The measured counterpart: Claude given the essay's sentence (“It's a V-shape neuron: pointed things drive it and round ones push it negative,
+whatever the label.”), on the 200 val photos. Counts and bars cover all 200; photos in each box are random.</figcaption></figure>
+<p><b>Car fronts.</b> The essay's figure lists a car under “pointed”, and one of the neuron's inputs it shows is “van front”. Claude reading the
+essay's sentence disagrees: of the 24 firing car photos in val (pickup, beach wagon, minivan, limousine, cab, racer, RV, police van, car wheel, grille),
+it calls 1 “fires”; “Pointed things make it fire; round things don't.” calls 0. So the same words, read carefully, give a different rule than the
+one in the author's head, which is one reason a written hypothesis is hard to test.</p>
 
 <h2 id="search">4. Result 2: searching for the best shape rule</h2>
 <p>To give the essay's idea its best shot, Claude searched for the strongest rule in its spirit.</p>
