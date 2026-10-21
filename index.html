@@ -76,14 +76,15 @@ details { font-size: 12px; color: var(--muted); margin-top: 10px; }
 <body>
 <header>
   <h1>Predict InceptionV1 neuron 4e:55</h1>
-  <label title="ON = the photo is at or above this percentile of the neuron's activation over all 1.33M ImageNet photos">ON ≥ percentile <input id="on" type="number" step="1" min="1" max="99.9" value="90"></label>
-  <label title="OFF = the photo is at or below this percentile">OFF ≤ percentile <input id="off" type="number" step="1" min="0.1" max="99" value="10"></label>
+  <label title="ON = the photo is at or above this percentile of the neuron's activation over all 1.33M ImageNet photos">ON ≥ percentile <input id="on" type="number" step="0.1" min="1" max="99.9" value="96.9"></label>
+  <label title="OFF = the photo is at or below this percentile">OFF ≤ percentile <input id="off" type="number" step="0.1" min="0.1" max="99" value="16.1"></label>
   <button id="reset" title="Clear your local history">Reset history</button>
   <button class="linkbtn" id="whatBtn">What am I predicting?</button>
 </header>
 <main>
   <section class="card">
     <div id="task"></div>
+    <div class="hint" id="cutNote" style="text-align:left;margin-bottom:6px">Why these odd numbers: we started with “fires” = at least 30% of the neuron's max and “silent” = under 5%, and later rewrote those as percentiles (top 3.1%, bottom 16.1%). Something more principled like 90/10 would be nicer; we haven't gotten around to it.</div>
     <div id="poolLine">Loading…</div>
     <div class="stage"><canvas id="view" width="448" height="448"></canvas></div>
     <div class="answers">
@@ -94,7 +95,7 @@ details { font-size: 12px; color: var(--muted); margin-top: 10px; }
     <div class="hint">F = off · J = on · Space = next · H = toggle heatmap</div>
     <details><summary>About</summary>
       Each photo is shown as the 224×224 crop the network actually sees. Cutoffs are percentiles of 4e:55's activation over all 1.33M ImageNet photos
-      (its value on a photo = its strongest response anywhere in the image). Default: ON = top 10%, OFF = bottom 10%. Half the trials are ON photos and half OFF,
+      (its value on a photo = its strongest response anywhere in the image). Default: ON = top 3.1% (at least 30% of its max), OFF = bottom 16.1% (under 5% of its max). Half the trials are ON photos and half OFF,
       each drawn in proportion to how common they are in ImageNet; photos in between are never shown. After you answer you see the photo's percentile, its
       peak as % of the neuron's max, and a heatmap (bright where it fires). Your history stays in this browser.
     </details>
@@ -328,7 +329,8 @@ function explain() {
     </ul>
     <p>Half the photos are ON and half OFF, so guessing at random scores 50%. Photos in between are never shown.</p>
     <p class="note">This only tests the extremes, which is far easier than predicting how strongly the neuron responds to an ordinary photo.
-    After each guess you see the photo's percentile and a heatmap of where it fired. You can change the cutoffs at the top.</p>`;
+    After each guess you see the photo's percentile and a heatmap of where it fired. You can change the cutoffs at the top.</p>
+    <p class="note">Why these odd numbers: we started with “fires” = at least 30% of the neuron's max and “silent” = under 5%, and later rewrote those as percentiles (top 3.1%, bottom 16.1%). Something more principled like 90/10 would be nicer; we haven't gotten around to it.</p>`;
 }
 function openIntro() { explain(); $('#intro').classList.add('open'); }
 function closeIntro() { $('#intro').classList.remove('open'); try { localStorage.setItem(SEEN, '1'); } catch {} }
@@ -344,7 +346,7 @@ $('#whatBtn').onclick = openIntro;
       const [q, ex, on, off] = shared.split('~'), N = st.data.values.length;
       const qq = (q || '').split('.').map(x => Math.max(0, Math.min(100000, parseInt(x) || 0))).concat([0, 0, 0, 0]).slice(0, 4);
       const ee = (ex || '').split('_').concat(['', '', '', '']).slice(0, 4).map(g => g.split(',').map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < N && g !== '').slice(0, 4));
-      const onv = Math.min(99.9, Math.max(1, +on || 90)), offv = Math.min(99, Math.max(0.1, +off || 10));
+      const onv = Math.min(99.9, Math.max(1, +on || 96.9)), offv = Math.min(99, Math.max(0.1, +off || 16.1));
       $('#on').value = onv; $('#off').value = offv; history.replaceState(null, '', location.pathname + `#on=${onv}&off=${offv}`);
       showCard(qq, ee, onv, offv, '', true);
     }
