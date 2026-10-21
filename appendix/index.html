@@ -56,6 +56,7 @@ round ones push it negative. The game is <a href="../">here</a>. The thread's fi
   <li><a href="#other">Other experiments</a></li>
   <li><a href="#caveats">Caveats</a></li>
   <li><a href="#data">Data and reproduction</a></li>
+  <li><a href="#future">Future work and open questions</a></li>
 </ol></nav>
 
 <h2 id="task">1. The task: what “fires” means</h2>
@@ -362,6 +363,32 @@ filename order. Otherwise it is row <i>gid − 50,000</i> of the training split,
 <tr><td><a href="data/class_lookup_30_5.json">class_lookup_*.json</a></td><td>class-lookup baselines under each cutoff</td></tr>
 <tr><td><a href="../data.json">../data.json</a>, <a href="../maps.bin">../maps.bin</a></td><td>the game's ~32k photos: value, class, percentile, sampling weight; 14×14 heatmaps (uint8, 196 bytes per photo)</td></tr>
 </table></div>
+<h2 id="future">10. Future work and open questions</h2>
+<p><b>Fuzzy hypotheses, made shareable.</b> Most real understanding sits somewhere between “full mechanistic understanding” and “unscientific
+vibes”. Fuzzy hypotheses are important, but they're hard to share: when I write down “it's a V-shape neuron”, the words don't carry the tacit stuff I
+actually mean. Is a car front pointed? The essay's figure says yes; Claude, reading the essay's sentence, mostly says no. An LLM can make a fuzzy
+hypothesis exact: instead of “my hypothesis is these words”, it becomes “my hypothesis is what Claude predicts given this prompt”. Anyone can rerun that.</p>
+<p><b>Frozen minds solve blinding.</b> You can give your fuzzy human hypothesis to Claude, have it form predictions before seeing the data, then see
+how well those predictions pan out. Any fuzzy hypothesis can be made exact this way, even big ones like the persona selection model: “given this prompt,
+Claude will make predictions based on the hypothesis”. We have an effectively unlimited supply of capable, blinded scientists who can be given whatever
+information we choose, selectively. Science should be able to get far more rigorous with that.</p>
+<p><b>But rigor with fuzzy hypotheses is hard.</b> A hypothesis is only known by what it predicts. Two hypotheses that predict the same things can't
+be told apart by any evidence, however different they sound. “V-shape” and “cats and cars” agree on the essay's own photos; evidence can only separate
+them where they disagree, like round fluffy faces. Evidence is also always relative. I can say the noun list beats pointed vs round on these photos
+(90% vs 56%). I can't say the noun list is <i>the</i> explanation, because that would need every possible hypothesis enumerated, which you basically never can.</p>
+<p><b>Proofs of understanding beyond simulation.</b> Predicting held-out activations is one proof of understanding, and the essay has fair criticisms
+of simulation scores (<a href="https://already-clean.goodfire.com/#on-simulation-scores">“On Simulation Scores”</a>). What else could count?</p>
+<ul>
+  <li><b>Predicting out of distribution:</b> activations on edited or synthetic images the hypothesis was never tuned on.</li>
+  <li><b>Predicting interventions:</b> what happens downstream when the neuron is ablated or steered.</li>
+  <li><b>Predicting before and after:</b> does someone's new understanding let them predict better than their old one? For the essay, that would mean before and after the V-shape insight.</li>
+  <li><b>Designing inputs:</b> using the hypothesis to build images that should fire or stay silent, then checking.</li>
+</ul>
+<p><b>Things I'd like to try:</b></p>
+<ul>
+  <li>Letting the essay's author write the prompt, or predict the photos directly in the game.</li>
+  <li>A standard format for publishing a “hypothesis as a prompt” alongside an interpretability claim, so readers can rerun it.</li>
+</ul>
 </main>
 </body>
 </html>
