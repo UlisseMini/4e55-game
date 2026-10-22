@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neuron Pole Game</title>
+<meta name="description" content="See a neuron's feature visualizations, then guess whether each photo is from its positive or negative pole.">
+<style>
+:root {
+  --bg: #f7f6f3; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #dddbd5;
+  --accent: #2f5d8a; --good: #2e7d4f; --bad: #b3403a; --pos: #c76b1a; --neg: #4a6a8a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a9892; --line: #34332f;
+          --accent: #7fa8d1; --good: #5cbf85; --bad: #e0766f; --pos: #e8a05a; --neg: #8fb0d0; }
+}
+:root[data-theme="dark"] { --bg: #161615; --panel: #1f1f1d; --ink: #ecebe7; --muted: #9a9892; --line: #34332f;
+          --accent: #7fa8d1; --good: #5cbf85; --bad: #e0766f; --pos: #e8a05a; --neg: #8fb0d0; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 15px; margin: 0 8px 0 0; }
+header a { color: var(--accent); font-size: 13px; }
+label { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 4px; }
+input, button, select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+input[type=number] { width: 76px; }
+button { cursor: pointer; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 260px; gap: 16px; padding: 16px; max-width: 1280px; margin: 0 auto; }
+@media (max-width: 1000px) { main { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.fvgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fvgrid figure { margin: 0; }
+.fvgrid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; display: block; background: var(--bg); }
+.fvgrid figcaption { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.fvgrid figcaption b { color: var(--pos); } .fvgrid figcaption b.n { color: var(--neg); }
+.na { aspect-ratio: 1; border-radius: 6px; border: 1px dashed var(--line); display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; text-align: center; padding: 8px; }
+#nline { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+.stage { width: 100%; max-width: 384px; aspect-ratio: 1; margin: 0 auto; border-radius: 8px; border: 4px solid transparent; background-repeat: no-repeat; background-color: var(--bg); image-rendering: auto; }
+.stage.good { border-color: var(--good); } .stage.bad { border-color: var(--bad); }
+.answers { display: flex; gap: 10px; justify-content: center; margin: 14px 0 6px; flex-wrap: wrap; }
+.answers button { min-width: 140px; padding: 10px 14px; font-size: 15px; font-weight: 600; }
+#bPos { border-color: var(--pos); color: var(--pos); } #bNeg { border-color: var(--neg); color: var(--neg); }
+#feedback { text-align: center; min-height: 3.4em; }
+#feedback .verdict { font-weight: 700; font-size: 16px; }
+#feedback .good { color: var(--good); } #feedback .bad { color: var(--bad); }
+.hint { color: var(--muted); font-size: 12px; text-align: center; }
+.dots { display: flex; gap: 5px; justify-content: center; margin-top: 8px; }
+.dots span { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+.dots span.g { background: var(--good); border-color: var(--good); } .dots span.b { background: var(--bad); border-color: var(--bad); }
+.dots span.cur { border-color: var(--ink); }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-variant-numeric: tabular-nums; }
+.stats div:nth-child(odd) { color: var(--muted); }
+.stats .sec { grid-column: 1 / -1; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-top: 6px; }
+#history { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+#history div { width: 40px; height: 40px; border-radius: 4px; border: 3px solid; background-repeat: no-repeat; }
+.note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+#next { display: none; margin: 8px auto 0; padding: 8px 16px; font-weight: 600; background: var(--accent); color: #fff; border-color: var(--accent); }
+#intro { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+#intro.open { display: flex; }
+#intro .box { background: var(--panel); border-radius: 12px; padding: 20px; max-width: 560px; max-height: 90vh; overflow: auto; }
+#intro .box button { margin-top: 10px; padding: 8px 18px; font-weight: 600; background: var(--accent); color: #fff; border-color: var(--accent); }
+.err { color: var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Neuron pole game</h1>
+  <label>Positive photos from
+    <select id="band">
+      <option value="top">the 16 strongest (easiest)</option>
+      <option value="p999">around the 50th strongest (99.9%)</option>
+      <option value="p99">around the 500th strongest (99%)</option>
+    </select></label>
+  <label>Neuron <input type="number" id="nIn" min="0" step="1"></label>
+  <button id="go">Go</button>
+  <button id="rand">Random neuron</button>
+  <a href="#" id="help">How it works</a>
+  <a href="../">4e:55 game</a>
+</header>
+<main>
+  <section class="card">
+    <h2>The neuron</h2>
+    <div id="nline"></div>
+    <div class="fvgrid" id="fvs"></div>
+    <p class="note">Feature visualizations are synthetic images optimized to drive the neuron up (positive pole) or down (negative pole).</p>
+  </section>
+  <section class="card">
+    <h2>Which pole is this photo from?</h2>
+    <div class="stage" id="stage" role="img" aria-label="photo"></div>
+    <div class="answers">
+      <button id="bNeg">Negative pole <span class="hint">[1 / ←]</span></button>
+      <button id="bPos">Positive pole <span class="hint">[2 / →]</span></button>
+    </div>
+    <div id="feedback"></div>
+    <div class="dots" id="dots"></div>
+    <button id="next">Next neuron →</button>
+  </section>
+  <aside class="card">
+    <h2>Score</h2>
+    <div class="stats" id="stats"></div>
+    <h2 style="margin-top:14px">This session</h2>
+    <div id="history"></div>
+    <p class="note">Stats are kept in this browser only.</p>
+  </aside>
+</main>
+<div id="intro"><div class="box">
+  <h2>How it works</h2>
+  <p>You get one neuron at a time from the second-to-last layer (<code>stage3.block1</code>, 1,024 neurons) of the ConvNeXt-SwiGLU “medium”
+  model from the essay <a href="https://already-clean.goodfire.com">Neural networks are already clean</a>. Study its feature visualizations, then
+  classify 8 photos: each is from either the neuron's <b>positive pole</b> (its strongest responses) or its <b>negative pole</b>
+  (its most negative responses). Half are each, so guessing scores 50%.</p>
+  <p><b>Difficulty</b> changes which positive photos you see: the 16 strongest of 50,000 ImageNet validation photos, or ones around the 50th or 500th strongest.
+  The negative photos are always the neuron's 4 most negative, because those are the only negative examples the microscope publishes.</p>
+  <p>Photos are the microscope's crops, centered where the neuron responds most (or most negatively). All images and values come from the essay's
+  <a href="https://already-clean.goodfire.com/microscope/medium.html">public microscope</a>; we didn't run the model.</p>
+  <button id="ok">OK</button>
+</div></div>
+<script>
+const $ = (s) => document.querySelector(s);
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+const FVL = [["pg_pos", "Path-guided, positive", ""], ["ba_pos", "Branch-aware, positive", ""], ["pg_neg", "Path-guided, negative", "n"], ["neg", "Negative pole", "n"]];
+const BANDNAME = { top: "16 strongest", p999: "~50th strongest", p99: "~500th strongest", neg: "4 most negative" };
+let D = null, BY = {}, N = null, deck = [], k = 0, answered = false, stats = store.get("pole.stats.v1", {}), session = [];
+const sheetStyle = (n, idx, size) => { const S = D.sheet, x = idx % S.cols, y = Math.floor(idx / S.cols);
+  return `background-image:url('n/${n.c}/ex.jpg');background-size:${S.cols * size}px ${S.rows * size}px;background-position:-${x * size}px -${y * size}px`; };
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function stageSize() { return $("#stage").clientWidth; }
+function load(c) {
+  if (!BY[c]) c = D.neurons.reduce((b, n) => Math.abs(n.c - c) < Math.abs(b - c) ? n.c : b, D.neurons[0].c);
+  N = BY[c]; $("#nIn").value = c; history.replaceState(null, "", `#n=${c}`);
+  $("#nline").textContent = `${D.layer} · neuron ${c} of ${D.neurons.length} available · values range ${N.min.toFixed(1)} to +${N.max.toFixed(1)} on 50,000 photos`;
+  $("#fvs").innerHTML = FVL.map(([key, name, cls]) => N.fv.includes(key) && !(key === "neg" && N.negok === false)
+    ? `<figure><img src="n/${c}/${key}.webp" alt="${name} feature visualization" loading="lazy"><figcaption><b class="${cls}">${name}</b></figcaption></figure>`
+    : `<figure><div class="na">${name}: not available for this neuron</div><figcaption><b class="${cls}">${name}</b></figcaption></figure>`).join("");
+  const band = $("#band").value;
+  const pos = shuffle(N.cells.filter((x) => x[1] === band)).slice(0, 4), neg = N.cells.filter((x) => x[1] === "neg").slice(0, 4);
+  deck = shuffle([...pos, ...neg]); k = 0; show();
+}
+function show() {
+  answered = false; const st = $("#stage"); st.className = "stage"; st.setAttribute("style", sheetStyle(N, deck[k][0], stageSize()));
+  $("#feedback").innerHTML = '<span class="hint">Study the feature visualizations, then pick a pole.</span>'; $("#next").style.display = "none"; dots();
+}
+function dots() { $("#dots").innerHTML = deck.map((x, i) => `<span class="${x.r === true ? "g" : x.r === false ? "b" : ""} ${i === k ? "cur" : ""}"></span>`).join(""); }
+function answer(saysPos) {
+  if (answered || !N) return; answered = true; const cell = deck[k], isPos = cell[1] !== "neg", ok = saysPos === isPos; cell.r = ok;
+  $("#stage").classList.add(ok ? "good" : "bad");
+  const band = $("#band").value; stats[band] = stats[band] || { n: 0, ok: 0 }; stats[band].n++; stats[band].ok += ok; store.set("pole.stats.v1", stats);
+  session.push({ c: N.c, idx: cell[0], ok }); renderStats();
+  $("#feedback").innerHTML = `<div class="verdict ${ok ? "good" : "bad"}">${ok ? "Correct" : "Wrong"}: ${isPos ? "positive" : "negative"} pole</div>
+    <div>value ${cell[2] > 0 ? "+" : ""}${cell[2]} (${BANDNAME[cell[1]]}) · ImageNet label: ${cell[3] || "?"}</div>`;
+  dots();
+  if (k === deck.length - 1) { $("#next").style.display = "block"; const s = deck.filter((x) => x.r).length; $("#feedback").innerHTML += `<div class="hint">This neuron: ${s}/${deck.length}</div>`; }
+  else setTimeout(() => { if (answered) { k++; show(); } }, ok ? 900 : 1800);
+}
+function renderStats() {
+  const row = (name, s) => `<div>${name}</div><div>${s && s.n ? `${(100 * s.ok / s.n).toFixed(0)}% (${s.ok}/${s.n})` : "–"}</div>`;
+  const all = Object.values(stats).reduce((a, s) => ({ n: a.n + s.n, ok: a.ok + s.ok }), { n: 0, ok: 0 });
+  const ss = session.reduce((a, s) => ({ n: a.n + 1, ok: a.ok + s.ok }), { n: 0, ok: 0 });
+  $("#stats").innerHTML = `<div class="sec">By difficulty (all time)</div>${row("16 strongest", stats.top)}${row("~50th strongest", stats.p999)}${row("~500th strongest", stats.p99)}
+    <div class="sec">Totals</div>${row("All time", all)}${row("This session", ss)}`;
+  $("#history").innerHTML = session.slice(-40).map((s) => `<div title="neuron ${s.c}" style="${sheetStyle(BY[s.c], s.idx, 34)};border-color:var(--${s.ok ? "good" : "bad"})"></div>`).join("");
+}
+const randN = () => D.neurons[Math.floor(Math.random() * D.neurons.length)].c;
+$("#bPos").onclick = () => answer(true); $("#bNeg").onclick = () => answer(false);
+$("#next").onclick = () => load(randN()); $("#rand").onclick = () => load(randN());
+$("#go").onclick = () => { load(parseInt($("#nIn").value || "0", 10)); };
+$("#band").onchange = () => { store.set("pole.band.v1", $("#band").value); if (N) load(N.c); };
+document.addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT") return;
+  if (e.key === "1" || e.key === "ArrowLeft") answer(false); else if (e.key === "2" || e.key === "ArrowRight") answer(true);
+  else if ((e.key === "Enter" || e.key === " ") && $("#next").style.display === "block") { e.preventDefault(); load(randN()); } });
+window.addEventListener("resize", () => { if (N) $("#stage").setAttribute("style", sheetStyle(N, deck[k][0], stageSize())); });
+$("#help").onclick = (e) => { e.preventDefault(); $("#intro").classList.add("open"); };
+$("#ok").onclick = () => { $("#intro").classList.remove("open"); store.set("pole.intro.v1", 1); };
+$("#band").value = store.get("pole.band.v1", "top");
+fetch("data.json").then((r) => r.json()).then((d) => {
+  D = d; d.neurons.forEach((n) => (BY[n.c] = n)); renderStats(); const m = location.hash.match(/n=(\d+)/); load(m ? +m[1] : randN());
+  if (!store.get("pole.intro.v1", 0)) $("#intro").classList.add("open");
+}).catch((e) => { $("#nline").innerHTML = `<span class="err">Couldn't load data: ${e}</span>`; });
+</script>
+</body>
+</html>
